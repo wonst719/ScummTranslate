@@ -168,12 +168,12 @@ namespace LanguageBundleBuilder
                     switch (typeTag)
                     {
                         // OBCD/VERB (WIO = ROOM(1))
-                        case "VERB": case "OC": case "OCv3":
+                        case "VERB": case "OC": case "OCv1":  case "OCv2": case "OCv3":
                             scrpType = 1;
                             break;
 
                         // SCRP (WIO = GLOBAL(2))
-                        case "SCRP": case "SC": case "SCv3":
+                        case "SCRP": case "SC": case "SCv1": case "SCv2": case "SCv3":
                             scrpType = 2;
                             roomIdx = 0;
                             break;
@@ -193,7 +193,7 @@ namespace LanguageBundleBuilder
                             scrpType = 3;
                             break;
 
-                        case "OBNA":
+                        case "OBNA": case "ONv1": case "ONv2":
                             scrpType = 1;
                             break;
                     }
