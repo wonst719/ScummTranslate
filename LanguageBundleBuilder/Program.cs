@@ -85,6 +85,17 @@ namespace LanguageBundleBuilder
             return c1 - c2;
         }
 
+        static int ParseNumber(string str)
+        {
+            int num = 0;
+            for (int i = 0; i < str.Length; i++)
+            {
+                num *= 10;
+                num += (str[i] - '0');
+            }
+            return num;
+        }
+
         static void CreateLanugageBundle(string engPath, string korPath, string outPath)
         {
             var euckr = Encoding.GetEncoding(949);
@@ -116,46 +127,47 @@ namespace LanguageBundleBuilder
                 {
                     int closingIdx = org.IndexOf(']');
 
-                    int a0 = org[1] - '0';
-                    int a1 = org[2] - '0';
-                    int a2 = org[3] - '0';
-                    roomIdx = a0 * 100 + a1 * 10 + a2;
+                    roomIdx = ParseNumber(org.Substring(1, 3));
 
                     int slice = (org[7] == '#') ? 2 : 4;
-                    var typeTag = org.AsSpan().Slice(5, slice).ToArray();
+                    var typeTag = org.Substring(5, slice);
 
                     // 일단 WIO만 구분해 보자
-                    if (typeTag.SequenceEqual("VERB") || typeTag.SequenceEqual("OC") || typeTag.SequenceEqual("OCv3"))  // OBCD/VERB (WIO = ROOM(1))
+                    switch (typeTag)
                     {
-                        scrpType = 1;
-                    }
-                    else if (typeTag.SequenceEqual("SCRP") || typeTag.SequenceEqual("SC") || typeTag.SequenceEqual("SCv3")) // SCRP (WIO = GLOBAL(2))
-                    {
-                        scrpType = 2;
-                        roomIdx = 0;
-                    }
-                    else if (typeTag.SequenceEqual("LSCR") || typeTag.SequenceEqual("LS") || typeTag.SequenceEqual("LSv3")) // LSCR (WIO = LOCAL(3))
-                    {
-                        scrpType = 3;
-                    }
-                    else if (typeTag.SequenceEqual("ENCD") || typeTag.SequenceEqual("EN") || typeTag.SequenceEqual("ENv3")) // ENCD (WIO = LOCAL(3))
-                    {
-                        scrpType = 3;
-                    }
-                    else if (typeTag.SequenceEqual("EXCD") || typeTag.SequenceEqual("EX") || typeTag.SequenceEqual("EXv3")) // EXCD (WIO = LOCAL(3))
-                    {
-                        scrpType = 3;
-                    }
-                    else if (typeTag.SequenceEqual("OBNA")) // v5+
-                    {
-                        scrpType = 1;
+                        // OBCD/VERB (WIO = ROOM(1))
+                        case "VERB": case "OC": case "OCv3":
+                            scrpType = 1;
+                            break;
+
+                        // SCRP (WIO = GLOBAL(2))
+                        case "SCRP": case "SC": case "SCv3":
+                            scrpType = 2;
+                            roomIdx = 0;
+                            break;
+
+                        // LSCR (WIO = LOCAL(3))
+                        case "LSCR": case "LS": case "LSv3":
+                            scrpType = 3;
+                            break;
+
+                        // ENCD (WIO = LOCAL(3))
+                        case "ENCD": case "EN": case "ENv3":
+                            scrpType = 3;
+                            break;
+
+                        // EXCD (WIO = LOCAL(3))
+                        case "EXCD": case "EX": case "EXv3":
+                            scrpType = 3;
+                            break;
+
+                        case "OBNA":
+                            scrpType = 1;
+                            break;
                     }
 
-                    int b0 = org[closingIdx - 4] - '0';
-                    int b1 = org[closingIdx - 3] - '0';
-                    int b2 = org[closingIdx - 2] - '0';
-                    int b3 = org[closingIdx - 1] - '0';
-                    scrpIdx = b0 * 1000 + b1 * 100 + b2 * 10 + b3;
+                    scrpIdx = ParseNumber(org.Substring(closingIdx - 4, 4));
+
                     if (scrpType == 1)
                         scrpIdx = 0;
 
@@ -179,15 +191,12 @@ namespace LanguageBundleBuilder
                         }
                         else
                         {
-                            int a0 = org[i + 1] - '0';
-                            int a1 = org[i + 2] - '0';
-                            int a2 = org[i + 3] - '0';
-                            int aa = a0 * 100 + a1 * 10 + a2;
-                            if (aa >= 256 || aa < 0)
+                            int code = ParseNumber(org.Substring(i + 1, 3));
+                            if (code >= 256 || code < 0)
                             {
                                 throw new Exception();
                             }
-                            orgBytes.Add((byte)aa);
+                            orgBytes.Add((byte)code);
 
                             i += 3;
                         }
@@ -221,15 +230,12 @@ namespace LanguageBundleBuilder
                         }
                         else
                         {
-                            int a0 = trs[i + 1] - '0';
-                            int a1 = trs[i + 2] - '0';
-                            int a2 = trs[i + 3] - '0';
-                            int aa = a0 * 100 + a1 * 10 + a2;
-                            if (aa >= 256 || aa < 0)
+                            int code = ParseNumber(trs.Substring(i + 1, 3));
+                            if (code >= 256 || code < 0)
                             {
                                 throw new Exception();
                             }
-                            trsBytes.Add((byte)aa);
+                            trsBytes.Add((byte)code);
 
                             i += 3;
                         }
