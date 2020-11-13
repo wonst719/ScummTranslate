@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace LanguageBundleBuilder
@@ -321,8 +322,7 @@ namespace LanguageBundleBuilder
                 totalLines += totalRoomLines;
             }
 
-            // write
-
+            // 파일에 기록
             var outputStream = File.OpenWrite(outPath);
             var writer = new BinaryWriter(outputStream);
 
@@ -402,23 +402,15 @@ namespace LanguageBundleBuilder
 
         static void Main(string[] args)
         {
-            //string srcPath = @"T:\[[[GAMES]]]\[LucasArts]\[ScummKor]\Sam and Max Hit the Road (CD DOS)\";
-            //string engPath = "text_eng";
-            //string korPath = "text_kor";
+            if (args.Length < 3)
+            {
+                var name = Assembly.GetExecutingAssembly().GetName();
+                Console.WriteLine("USAGE: {0} english_path korean_path output_path", name.Name);
+            }
 
-            string srcPath = @"D:\Projects\ScummVM_K2\_Subs\loom_ega_kor\";
-            string engPath = srcPath + "text_ega_eng";
-            string korPath = srcPath + "text_ega_kor";
-
-            //string srcPath = @"T:\[[[GAMES]]]\[LucasArts]\[ScummKor]\Monkey Island 2 LeChuck's Revenge (DOS)\";
-            //string engPath = "text";
-            //string korPath = "text_h";
-
-            //string srcPath = @"D:\Projects\ScummVM_K2\_Subs\dott_kor_sources\";
-            //string engPath = "text_eng_cd";
-            //string korPath = "dott_kor_beta4_cd.txt";
-
-            string outPath = srcPath + "korean.trs";
+            string engPath = args[0];
+            string korPath = args[1];
+            string outPath = args[2];
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
