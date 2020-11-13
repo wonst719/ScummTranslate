@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
+using CommandLine;
+
 namespace LanguageBundleBuilder
 {
     class Program
@@ -400,21 +402,28 @@ namespace LanguageBundleBuilder
             outputStream.Close();
         }
 
-        static void Main(string[] args)
+        class Options
         {
-            if (args.Length < 3)
-            {
-                var name = Assembly.GetExecutingAssembly().GetName();
-                Console.WriteLine("USAGE: {0} english_path korean_path output_path", name.Name);
-            }
+            [Option('e', Required = true, HelpText = "English file path")]
+            public string EnglishPath { get; set; }
 
-            string engPath = args[0];
-            string korPath = args[1];
-            string outPath = args[2];
+            [Option('k', Required = true, HelpText = "Korean file path")]
+            public string KoreanPath { get; set; }
 
+            [Option('o', Required = true, HelpText = "Output bundle file path")]
+            public string OutputPath { get; set; }
+        }
+
+        static void RunOptions(Options opts)
+        {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            CreateLanugageBundle(engPath, korPath, outPath);
+            CreateLanugageBundle(opts.EnglishPath, opts.KoreanPath, opts.OutputPath);
+        }
+
+        static void Main(string[] args)
+        {
+            Parser.Default.ParseArguments<Options>(args).WithParsed(RunOptions);
         }
     }
 }
