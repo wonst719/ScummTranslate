@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 using CommandLine;
@@ -33,6 +35,38 @@ namespace LanguageBundleBuilder
             public override string ToString()
             {
                 return $"#{lineId}:{scrpType}/{scrpIdx} \"{dbgOrg}\"";
+            }
+
+            public class EqualityComparer : IEqualityComparer<TrsLine>
+            {
+                public bool Equals(TrsLine x, TrsLine y)
+                {
+                    if (ReferenceEquals(x, y))
+                        return true;
+
+                    if (ReferenceEquals(x, null) || ReferenceEquals(y, null))
+                        return false;
+
+                    return CompareResString(x.org, y.org) == 0 && CompareResString(x.trs, y.trs) == 0;
+                }
+
+                static SHA256 sha = SHA256.Create();
+
+                static int Hash(byte[] arr)
+                {
+                    var hash = sha.ComputeHash(arr).AsSpan();
+                    uint a = BitConverter.ToUInt32(hash.Slice(0));
+                    uint b = BitConverter.ToUInt32(hash.Slice(4));
+                    uint c = BitConverter.ToUInt32(hash.Slice(8));
+                    uint d = BitConverter.ToUInt32(hash.Slice(12));
+
+                    return (int)(a ^ b ^ c ^ d);
+                }
+
+                public int GetHashCode(TrsLine obj)
+                {
+                    return Hash(obj.org) ^ Hash(obj.trs);
+                }
             }
         }
 
@@ -216,6 +250,7 @@ namespace LanguageBundleBuilder
                     trs = trs.Substring(closingIdx + 1);
                 }
 
+                // convert trs
                 List<byte> trsBytes = new List<byte>();
                 for (int i = 0; i < trs.Length; i++)
                 {
@@ -240,17 +275,12 @@ namespace LanguageBundleBuilder
                     }
                     else
                     {
-                        char c = trs[i];
-                        char[] cc = new char[1] { c };
-                        byte[] bytes = euckr.GetBytes(cc);
-                        for (int z = 0; z < bytes.Length; z++)
-                        {
-                            trsBytes.Add(bytes[z]);
-                        }
+                        char[] chr = new char[1] { trs[i] };
+                        byte[] bytes = euckr.GetBytes(chr);
+                        trsBytes.AddRange(bytes);
                     }
                 }
                 byte[] orgs = orgBytes.ToArray();
-                byte[] orgsNoSpeech = orgBytes.ToArray();
                 byte[] trss = trsBytes.ToArray();
 
                 // 필터링
@@ -261,9 +291,6 @@ namespace LanguageBundleBuilder
                 //        continue;
                 //    }
                 //}
-                //
-                //if (orgs.Length == 1 && orgs[0] == ' ')
-                //    continue;
 
                 //if (orgs.Length > 16)
                 //{
@@ -273,6 +300,9 @@ namespace LanguageBundleBuilder
                 //        org = org.Substring(16 * 4);
                 //    }
                 //}
+
+                if (orgs.Length == 1 && orgs[0] == ' ')
+                    continue;
 
                 var trsLine = new TrsLine { roomIdx = (ushort)roomIdx, scrpType = (byte)scrpType, scrpIdx = (ushort)scrpIdx, org = orgs, trs = trss, dbgOrg = org, dbgTrs = trs };
 
@@ -295,6 +325,12 @@ namespace LanguageBundleBuilder
             int totalLines = 0;
             foreach (var room in rooms)
             {
+                foreach (var script in room.Value.scripts)
+                {
+                    var t = script.Value;
+                    t.lines = t.lines.Distinct(new TrsLine.EqualityComparer()).ToList();
+                }
+
                 int totalRoomLines = 0;
                 foreach (var script in room.Value.scripts)
                 {
